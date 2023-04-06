@@ -10,6 +10,8 @@ FROM $CORE_IMAGE as core
 
 FROM $FFMPEG_IMAGE
 
+RUN apk --no-cache add sudo tini shadow bash
+
 ARG USERNAME=core
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
