@@ -10,6 +10,24 @@ FROM $CORE_IMAGE as core
 
 FROM $FFMPEG_IMAGE
 
+ARG USERNAME=core
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Add group and user
+RUN addgroup $USERNAME -g $USER_GID && \
+    adduser -G $USERNAME -u $USER_UID -s /bin/bash -D $USERNAME && \
+    echo $USERNAME ALL=\(ALL\) NOPASSWD:ALL > /etc/sudoers.d/nopasswd
+
+# Change user
+USER $USERNAME
+
+# Configure a nice terminal
+RUN echo "export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> /home/$USERNAME/.bashrc && \
+# Fake poweroff (stops the container from the inside by sending SIGHUP to PID 1)
+    echo "alias poweroff='kill -1 1'" >> /home/$USERNAME/.bashrc
+
+
 COPY --from=core /core /core
 COPY --from=restreamer-ui /ui/build /core/ui
 
@@ -31,5 +49,7 @@ EXPOSE 1936/tcp
 EXPOSE 6000/udp
 
 VOLUME ["/core/data", "/core/config"]
-ENTRYPOINT ["/core/bin/run.sh"]
+
+ENTRYPOINT ["/sbin/tini", "--", "/core/bin/run.sh"]
 WORKDIR /core
+CMD ["/bin/bash"]
